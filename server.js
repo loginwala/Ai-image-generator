@@ -29,18 +29,40 @@ app.get('/api/status', async (req, res) => {
 app.get('/api/generate', async (req, res) => {
     try {
         const prompt = req.query.prompt;
+        const resolution = req.query.resolution || 'medium'; // Default to medium resolution
+        
         if (!prompt) {
             return res.status(400).json({ error: 'Prompt is required' });
         }
 
-        const response = await fetch(`https://seaart-ai.apis-bj-devs.workers.dev/?Prompt=${encodeURIComponent(prompt)}`, {
-            headers: {
-                'Accept': 'application/json'
-            }
-        });
+        // Define resolution mappings
+        const resolutionSizes = {
+            'low': '512x512',
+            'medium': '768x768',
+            'high': '1024x1024'
+        };
 
-        const data = await response.json();
-        res.json(data);
+        const size = resolutionSizes[resolution] || resolutionSizes.medium;
+
+        // Set a longer timeout for the fetch request
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 120000); // 120 second timeout
+
+        try {
+            const response = await fetch(`https://seaart-ai.apis-bj-devs.workers.dev/?Prompt=${encodeURIComponent(prompt)}&size=${size}`, {
+                headers: {
+                    'Accept': 'application/json'
+                },
+                signal: controller.signal
+            });
+            clearTimeout(timeout); // Clear the timeout if request succeeds
+
+            const data = await response.json();
+            res.json(data);
+        } catch (fetchError) {
+            clearTimeout(timeout);
+            throw new Error(`Failed to generate image: ${fetchError.message}`);
+        }
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
