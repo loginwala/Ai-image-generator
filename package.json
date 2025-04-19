@@ -1,14 +1,14 @@
 {
   "name": "img-generator-website",
   "version": "1.0.0",
-  "description": "Image Generator Website with Netlify Functions",
+  "description": "Image Generator Website",
   "scripts": {
-    "dev": "netlify dev"
+    "dev": "node server.js",
+    "start": "node server.js"
   },
   "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
     "node-fetch": "^2.6.9"
-  },
-  "devDependencies": {
-    "netlify-cli": "^15.0.0"
   }
 }
