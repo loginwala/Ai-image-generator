@@ -4,12 +4,10 @@
   "description": "AI Image Generator Website",
   "private": true,
   "engines": {
-    "node": ">=14.0.0"
+    "node": "18.x"
   },
   "scripts": {
-    "dev": "node server.js",
-    "start": "node server.js",
-    "build": "echo 'No build step required'"
+    "start": "node server.js"
   },
   "dependencies": {
     "cors": "^2.8.5",

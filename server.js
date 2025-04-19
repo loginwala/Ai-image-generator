@@ -27,6 +27,9 @@ app.get('/api/status', async (req, res) => {
 
 // API proxy endpoint for image generation
 app.get('/api/generate', async (req, res) => {
+    // Set response timeout to prevent Vercel 504 errors
+    res.setTimeout(250000); // 250 seconds
+
     try {
         const prompt = req.query.prompt;
         const resolution = req.query.resolution || 'medium'; // Default to medium resolution
@@ -35,30 +38,50 @@ app.get('/api/generate', async (req, res) => {
             return res.status(400).json({ error: 'Prompt is required' });
         }
 
-        // Define resolution mappings
+        // Define resolution mappings with adjusted sizes for faster processing
         const resolutionSizes = {
             'low': '512x512',
-            'medium': '768x768',
-            'high': '1024x1024'
+            'medium': '640x640', // Reduced from 768x768
+            'high': '768x768'    // Reduced from 1024x1024
         };
 
         const size = resolutionSizes[resolution] || resolutionSizes.medium;
 
         // Set a longer timeout for the fetch request
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 120000); // 120 second timeout
+        const timeout = setTimeout(() => controller.abort(), 240000); // 240 second timeout
 
         try {
-            const response = await fetch(`https://seaart-ai.apis-bj-devs.workers.dev/?Prompt=${encodeURIComponent(prompt)}&size=${size}`, {
-                headers: {
-                    'Accept': 'application/json'
-                },
-                signal: controller.signal
-            });
-            clearTimeout(timeout); // Clear the timeout if request succeeds
+            // Add retries for reliability
+            let retries = 3;
+            let lastError;
 
-            const data = await response.json();
-            res.json(data);
+            while (retries > 0) {
+                try {
+                    const response = await fetch(`https://seaart-ai.apis-bj-devs.workers.dev/?Prompt=${encodeURIComponent(prompt)}&size=${size}`, {
+                        headers: {
+                            'Accept': 'application/json'
+                        },
+                        signal: controller.signal
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`API returned status ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    clearTimeout(timeout);
+                    return res.json(data);
+                } catch (error) {
+                    lastError = error;
+                    retries--;
+                    if (retries > 0) {
+                        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before retry
+                    }
+                }
+            }
+
+            throw lastError;
         } catch (fetchError) {
             clearTimeout(timeout);
             throw new Error(`Failed to generate image: ${fetchError.message}`);
