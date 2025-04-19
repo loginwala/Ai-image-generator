@@ -1,0 +1,14 @@
+{
+  "name": "img-generator-website",
+  "version": "1.0.0",
+  "description": "Image Generator Website with Netlify Functions",
+  "scripts": {
+    "dev": "netlify dev"
+  },
+  "dependencies": {
+    "node-fetch": "^2.6.9"
+  },
+  "devDependencies": {
+    "netlify-cli": "^15.0.0"
+  }
+}
